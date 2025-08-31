@@ -2,7 +2,7 @@
   "name": "chinese-learning-game",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://simondai.github.io/chinese-learning-game",
+  "homepage": "https://simontheteemo.github.io/chinese-learning-game",
   "dependencies": {
     "@google-cloud/text-to-speech": "^6.3.0",
     "@react-oauth/google": "^0.12.2",
