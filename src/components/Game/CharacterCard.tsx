@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { ChineseCharacter } from '../../types';
 import { audioService } from '../../services/audioService';
@@ -142,30 +142,38 @@ const Feedback = styled.div<{ $isCorrect: boolean }>`
   margin-top: ${props => props.theme.spacing.lg};
 `;
 
+// Generate options outside component to avoid recreation on every render
+const generateOptions = (characterMeaning: string): string[] => {
+  const wrongOptions = [
+    'hello', 'goodbye', 'thank you', 'water', 'fire', 'earth', 'big', 'small',
+    'beautiful', 'ugly', 'fast', 'slow', 'happy', 'sad', 'love', 'hate'
+  ].filter(option => option !== characterMeaning);
+  
+  const randomWrongOptions = wrongOptions
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 3);
+  
+  const allOptions = [characterMeaning, ...randomWrongOptions]
+    .sort(() => Math.random() - 0.5);
+  
+  return allOptions;
+};
+
 const CharacterCard: React.FC<CharacterCardProps> = ({ character, onAnswer }) => {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [showPinyin, setShowPinyin] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [options, setOptions] = useState<string[]>([]);
 
-  // Generate options (correct answer + 3 random wrong answers)
-  const generateOptions = () => {
-    const wrongOptions = [
-      'hello', 'goodbye', 'thank you', 'water', 'fire', 'earth', 'big', 'small',
-      'beautiful', 'ugly', 'fast', 'slow', 'happy', 'sad', 'love', 'hate'
-    ].filter(option => option !== character.meaning);
-    
-    const randomWrongOptions = wrongOptions
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 3);
-    
-    const allOptions = [character.meaning, ...randomWrongOptions]
-      .sort(() => Math.random() - 0.5);
-    
-    return allOptions;
-  };
-
-  const [options] = useState(generateOptions());
+  // Reset component state when character changes
+  useEffect(() => {
+    setSelectedOption(null);
+    setShowResult(false);
+    setShowPinyin(false);
+    setIsPlaying(false);
+    setOptions(generateOptions(character.meaning));
+  }, [character.id, character.meaning]);
 
   const handleOptionClick = (option: string) => {
     if (showResult) return;
