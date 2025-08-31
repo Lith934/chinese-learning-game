@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { ChineseCharacter } from '../../types';
 import { audioService } from '../../services/audioService';
@@ -164,16 +164,7 @@ const CharacterCard: React.FC<CharacterCardProps> = ({ character, onAnswer }) =>
   const [showResult, setShowResult] = useState(false);
   const [showPinyin, setShowPinyin] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [options, setOptions] = useState<string[]>([]);
-
-  // Reset component state when character changes
-  useEffect(() => {
-    setSelectedOption(null);
-    setShowResult(false);
-    setShowPinyin(false);
-    setIsPlaying(false);
-    setOptions(generateOptions(character.meaning));
-  }, [character.id, character.meaning]);
+  const [options] = useState(() => generateOptions(character.meaning));
 
   const handleOptionClick = (option: string) => {
     if (showResult) return;

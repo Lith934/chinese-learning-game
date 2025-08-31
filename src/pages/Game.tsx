@@ -251,6 +251,7 @@ const Game: React.FC = () => {
       <GameArea>
         {characters[currentCharacterIndex] && (
           <CharacterCard
+            key={characters[currentCharacterIndex].id}
             character={characters[currentCharacterIndex]}
             onAnswer={handleAnswer}
           />
