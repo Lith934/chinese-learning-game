@@ -1,25 +1,39 @@
 import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from 'styled-components';
+import { GoogleOAuthProvider } from '@react-oauth/google';
+import GlobalStyles from './styles/GlobalStyles';
+import { theme } from './styles/theme';
+import { UserProvider } from './contexts/UserContext';
+import Header from './components/Layout/Header';
+import Home from './pages/Home';
+import Game from './pages/Game';
+import Profile from './pages/Profile';
+
+// Replace with your actual Google OAuth Client ID
+const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || 'demo-client-id';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <ThemeProvider theme={theme}>
+      <GlobalStyles />
+      <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+        <UserProvider>
+          <Router>
+            <div className="App">
+              <Header />
+              <main>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/game" element={<Game />} />
+                  <Route path="/profile" element={<Profile />} />
+                </Routes>
+              </main>
+            </div>
+          </Router>
+        </UserProvider>
+      </GoogleOAuthProvider>
+    </ThemeProvider>
   );
 }
 
