@@ -1,6 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Achievement, UserProgress } from '../types';
 
+interface GoogleUserData {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+}
+
 interface UserContextType {
   user: User | null;
   achievements: Achievement[];
@@ -11,6 +18,7 @@ interface UserContextType {
   updateProgress: (characterId: string, correct: boolean) => void;
   isLoggedIn: boolean;
   login: (userData: Partial<User>) => void;
+  loginWithGoogle: (googleData: GoogleUserData) => void;
   logout: () => void;
 }
 
@@ -217,6 +225,45 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(newUser);
   };
 
+  const loginWithGoogle = (googleData: GoogleUserData) => {
+    // Check if user already exists in localStorage
+    const savedUser = localStorage.getItem('chineseGameUser');
+    let existingUser: User | null = null;
+    
+    if (savedUser) {
+      const parsedUser = JSON.parse(savedUser);
+      if (parsedUser.id === googleData.id) {
+        existingUser = parsedUser;
+      }
+    }
+    
+    if (existingUser) {
+      // Update existing user's login time and any new info
+      const updatedUser: User = {
+        ...existingUser,
+        name: googleData.name, // Update name in case it changed
+        email: googleData.email,
+        avatar: googleData.avatar,
+        lastLoginAt: new Date().toISOString(),
+      };
+      setUser(updatedUser);
+    } else {
+      // Create new user from Google data
+      const newUser: User = {
+        id: googleData.id,
+        name: googleData.name,
+        email: googleData.email,
+        avatar: googleData.avatar,
+        level: 1,
+        experience: 0,
+        totalScore: 0,
+        createdAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString(),
+      };
+      setUser(newUser);
+    }
+  };
+
   const logout = () => {
     setUser(null);
     setUserProgress([]);
@@ -240,6 +287,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updateProgress,
     isLoggedIn: !!user,
     login,
+    loginWithGoogle,
     logout
   };
 

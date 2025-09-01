@@ -1,10 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import CharacterCard from '../components/Game/CharacterCard';
 import GameProgress from '../components/Game/GameProgress';
 import GameResults from '../components/Game/GameResults';
+import LearningProgress from '../components/Game/LearningProgress';
+import TransitionTimer from '../components/Game/TransitionTimer';
 import { ChineseCharacter, GameSession } from '../types';
-import { useUser } from '../contexts/UserContext';
+import { useCloudUser as useUser } from '../contexts/CloudUserContext';
+import { CharacterService } from '../services/characterService';
+import { audioService } from '../services/audioService';
 
 const Container = styled.div`
   max-width: 900px;
@@ -67,52 +71,10 @@ const StartButton = styled.button`
   }
 `;
 
-// Mock character data - will be replaced with API call
-const mockCharacters: ChineseCharacter[] = [
-  {
-    id: '1',
-    character: '你',
-    pinyin: 'nǐ',
-    meaning: 'you',
-    difficulty: 1,
-    category: 'pronouns',
-  },
-  {
-    id: '2',
-    character: '好',
-    pinyin: 'hǎo',
-    meaning: 'good/well',
-    difficulty: 1,
-    category: 'adjectives',
-  },
-  {
-    id: '3',
-    character: '我',
-    pinyin: 'wǒ',
-    meaning: 'I/me',
-    difficulty: 1,
-    category: 'pronouns',
-  },
-  {
-    id: '4',
-    character: '是',
-    pinyin: 'shì',
-    meaning: 'to be/am/is/are',
-    difficulty: 1,
-    category: 'verbs',
-  },
-  {
-    id: '5',
-    character: '的',
-    pinyin: 'de',
-    meaning: 'possessive particle',
-    difficulty: 2,
-    category: 'particles',
-  },
-];
+const CHARACTERS_PER_SESSION = 10;
 
 const Game: React.FC = () => {
-  const { user, addExperience, updateProgress, login } = useUser();
+  const { user, addExperience, updateProgress } = useUser();
   const [gameState, setGameState] = useState<'ready' | 'playing' | 'completed'>('ready');
   const [currentCharacterIndex, setCurrentCharacterIndex] = useState(0);
   const [score, setScore] = useState(0);
@@ -120,18 +82,26 @@ const Game: React.FC = () => {
   const [totalQuestions, setTotalQuestions] = useState(0);
   const [gameSession, setGameSession] = useState<GameSession | null>(null);
   const [characters, setCharacters] = useState<ChineseCharacter[]>([]);
+  const [showTransitionTimer, setShowTransitionTimer] = useState(false);
+  const currentGameSessionRef = useRef<string | null>(null);
 
-  // Auto-login guest user if not logged in
+  // Redirect to login if not authenticated
   useEffect(() => {
-    if (!user) {
-      login({ name: '学习者' }); // Guest user with Chinese name
-    }
-  }, [user, login]);
-
-  useEffect(() => {
-    // Load characters based on user level - for now using mock data
-    setCharacters(mockCharacters);
+    // Characters will only load when user is authenticated
+    // No auto-login needed since we use Google Auth
   }, []);
+
+  useEffect(() => {
+    // Only load characters when in ready state and user exists
+    // This prevents characters from changing mid-game when user state updates
+    if (user && gameState === 'ready' && characters.length === 0) {
+      const selectedCharacters = CharacterService.selectCharactersForUser({
+        userLevel: user.level,
+        count: CHARACTERS_PER_SESSION
+      });
+      setCharacters(selectedCharacters);
+    }
+  }, [user, gameState, characters.length]);
 
   const startGame = () => {
     if (!user) return;
@@ -147,6 +117,8 @@ const Game: React.FC = () => {
       startedAt: new Date().toISOString(),
     };
     
+    // Lock in the current session to prevent character changes
+    currentGameSessionRef.current = session.id;
     setGameSession(session);
     setGameState('playing');
     setCurrentCharacterIndex(0);
@@ -155,13 +127,22 @@ const Game: React.FC = () => {
     setTotalQuestions(characters.length);
   };
 
-  const handleAnswer = (isCorrect: boolean, points: number) => {
+  const handleAnswer = async (isCorrect: boolean, points: number) => {
     const currentCharacter = characters[currentCharacterIndex];
     const newScore = score + (isCorrect ? points : 0);
     const newCorrectAnswers = correctAnswers + (isCorrect ? 1 : 0);
     
     setScore(newScore);
     setCorrectAnswers(newCorrectAnswers);
+    
+    // Auto-play sound for correct answers
+    if (isCorrect) {
+      try {
+        await audioService.playPronunciation(currentCharacter.character, currentCharacter.pinyin);
+      } catch (error) {
+        console.warn('Could not play pronunciation:', error);
+      }
+    }
     
     // Update user progress and add experience
     updateProgress(currentCharacter.id, isCorrect);
@@ -179,41 +160,108 @@ const Game: React.FC = () => {
       setGameSession(updatedSession);
     }
 
-    // Move to next character or end game
+    // Move to next character or end game with timer
     if (currentCharacterIndex + 1 >= characters.length) {
-      setGameState('completed');
-      if (gameSession) {
-        setGameSession({
-          ...gameSession,
-          completedAt: new Date().toISOString(),
-        });
-      }
-    } else {
       setTimeout(() => {
-        setCurrentCharacterIndex(currentCharacterIndex + 1);
-      }, 1500);
+        setGameState('completed');
+        if (gameSession) {
+          setGameSession({
+            ...gameSession,
+            completedAt: new Date().toISOString(),
+          });
+        }
+      }, 2000);
+    } else {
+      // Show transition timer after 2 seconds
+      setTimeout(() => {
+        setShowTransitionTimer(true);
+      }, 2000);
     }
   };
 
+  const handleTransitionComplete = () => {
+    setShowTransitionTimer(false);
+    setCurrentCharacterIndex(currentCharacterIndex + 1);
+  };
+
   const resetGame = () => {
+    // Clear the current session
+    currentGameSessionRef.current = null;
     setGameState('ready');
     setCurrentCharacterIndex(0);
     setScore(0);
     setCorrectAnswers(0);
     setTotalQuestions(0);
     setGameSession(null);
+    setShowTransitionTimer(false);
+    
+    // Clear characters to trigger reload
+    setCharacters([]);
   };
 
-  if (gameState === 'ready') {
+  if (!user) {
     return (
       <Container>
         <GameArea>
           <h2 style={{ fontSize: '2rem', marginBottom: '2rem', color: '#FF6B6B' }}>
+            Welcome to Chinese Learning! 欢迎学中文！
+          </h2>
+          <p style={{ fontSize: '1.2rem', color: '#7F8C8D', marginBottom: '2rem', lineHeight: 1.6 }}>
+            Please sign in with Google to start your Chinese learning journey and track your progress.
+          </p>
+          <p style={{ fontSize: '1rem', color: '#95A5A6', marginBottom: '2rem' }}>
+            🎯 Personalized difficulty levels<br/>
+            📊 Track your learning progress<br/>
+            🏆 Unlock achievements<br/>
+            💾 Save your game data
+          </p>
+          <div style={{ fontSize: '0.9rem', color: '#BDC3C7' }}>
+            Click "Sign in with Google" in the header to get started!
+          </div>
+        </GameArea>
+      </Container>
+    );
+  }
+
+  if (gameState === 'ready') {
+    const getDifficultyDescription = (level: number) => {
+      if (level <= 5) return 'Basic characters (most common)';
+      if (level <= 15) return 'Common characters (everyday use)';
+      if (level <= 30) return 'Intermediate characters';
+      return 'Advanced characters (challenging!)';
+    };
+
+    const maxDifficulty = user ? (
+      user.level <= 5 ? 1 : 
+      user.level <= 15 ? 2 : 
+      user.level <= 30 ? 3 : 4
+    ) : 1;
+
+    return (
+      <Container>
+        <LearningProgress userLevel={user.level} />
+        <GameArea>
+          <h2 style={{ fontSize: '2rem', marginBottom: '2rem', color: '#FF6B6B' }}>
             Ready to Learn Chinese? 准备好学中文了吗？
           </h2>
-          <p style={{ fontSize: '1.2rem', marginBottom: '2rem', color: '#7F8C8D' }}>
-            You'll learn {characters.length} characters in this session
-          </p>
+          <div style={{ marginBottom: '2rem' }}>
+            <p style={{ fontSize: '1.2rem', color: '#7F8C8D', marginBottom: '1rem' }}>
+              Level {user.level} - {getDifficultyDescription(user.level)}
+            </p>
+            <p style={{ fontSize: '1rem', color: '#95A5A6', marginBottom: '1rem' }}>
+              You'll practice {characters.length} characters up to difficulty level {maxDifficulty}
+            </p>
+            <p style={{ fontSize: '0.9rem', color: '#BDC3C7' }}>
+              {user.level <= 5 ? 
+                "Starting with the most commonly used characters to build your foundation! 🌱" :
+                user.level <= 15 ?
+                "Great progress! Learning everyday characters now 📚" :
+                user.level <= 30 ?
+                "Getting challenging! You're doing amazing 💪" :
+                "Expert level! These are truly advanced characters 🎯"
+              }
+            </p>
+          </div>
           <StartButton onClick={startGame}>
             Start Game 开始游戏
           </StartButton>
@@ -248,7 +296,7 @@ const Game: React.FC = () => {
         </Score>
       </GameHeader>
 
-      <GameArea>
+      <GameArea style={{ opacity: showTransitionTimer ? 0.5 : 1, transition: 'opacity 0.3s ease' }}>
         {characters[currentCharacterIndex] && (
           <CharacterCard
             key={characters[currentCharacterIndex].id}
@@ -257,6 +305,12 @@ const Game: React.FC = () => {
           />
         )}
       </GameArea>
+      
+      <TransitionTimer
+        isActive={showTransitionTimer}
+        duration={3000}
+        onComplete={handleTransitionComplete}
+      />
     </Container>
   );
 };

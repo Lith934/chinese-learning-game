@@ -22,10 +22,9 @@ A fun, interactive web application for kids to learn Chinese characters through 
 - **Google OAuth** for authentication
 
 ### Backend
-- **AWS Lambda** for serverless functions
-- **DynamoDB** for data storage
-- **API Gateway** for REST endpoints
-- **Terraform** for infrastructure as code
+- **Firebase Firestore** for cloud database
+- **Google OAuth** for authentication
+- **Firebase Security Rules** for access control
 
 ### DevOps
 - **Docker** for containerization
@@ -37,27 +36,31 @@ A fun, interactive web application for kids to learn Chinese characters through 
 
 ### Prerequisites
 - Node.js 18+
-- Docker (optional)
-- AWS CLI (for backend deployment)
-- Terraform (for infrastructure)
+- Firebase project (free)
+- Google OAuth credentials
 
-### Frontend Development
+### Setup
 
 ```bash
-# Install dependencies
+# Clone and install
+git clone [your-repo-url]
+cd chinese-learning-game
 npm install
+
+# Setup environment variables
+cp .env.example .env
+# Edit .env with your Firebase config (see SETUP.md)
 
 # Start development server
 npm start
 
 # Build for production
 npm run build
-
-# Run tests
-npm test
 ```
 
 The app will be available at `http://localhost:3000`
+
+📋 **See [SETUP.md](SETUP.md) for detailed configuration instructions**
 
 ### Docker Deployment
 
@@ -111,19 +114,21 @@ npm run build
 
 ### Environment Variables
 
-Frontend (`.env.local`):
+Create `.env` file (copy from `.env.example`):
 ```env
+# Firebase Configuration
+REACT_APP_FIREBASE_API_KEY=your_firebase_api_key
+REACT_APP_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+REACT_APP_FIREBASE_PROJECT_ID=your-project-id
+REACT_APP_FIREBASE_STORAGE_BUCKET=your-project.firebasestorage.app
+REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+REACT_APP_FIREBASE_APP_ID=your_app_id
+
+# Google OAuth
 REACT_APP_GOOGLE_CLIENT_ID=your-google-oauth-client-id
-REACT_APP_API_BASE_URL=https://your-api-gateway-url.com
 ```
 
-Backend (AWS Lambda Environment):
-```env
-USERS_TABLE=chinese-learning-game-users-dev
-CHARACTERS_TABLE=chinese-learning-game-characters-dev
-USER_PROGRESS_TABLE=chinese-learning-game-user-progress-dev
-GAME_SESSIONS_TABLE=chinese-learning-game-game-sessions-dev
-```
+**⚠️ Never commit `.env` to git - it's in `.gitignore`**
 
 ### Google OAuth Setup
 

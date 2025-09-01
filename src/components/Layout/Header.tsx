@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
-import { useUser } from '../../contexts/UserContext';
+import { useCloudUser as useUser } from '../../contexts/CloudUserContext';
+import GoogleAuthButton from '../Auth/GoogleAuthButton';
 
 const HeaderContainer = styled.header`
   background: ${props => props.theme.colors.surface};
@@ -69,25 +70,10 @@ const UserLevel = styled.span`
   color: ${props => props.theme.colors.text.secondary};
 `;
 
-const LogoutButton = styled.button`
-  background: none;
-  border: 1px solid ${props => props.theme.colors.text.light};
-  color: ${props => props.theme.colors.text.secondary};
-  padding: ${props => props.theme.spacing.xs} ${props => props.theme.spacing.sm};
-  border-radius: 4px;
-  font-size: ${props => props.theme.sizes.xs};
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover {
-    border-color: ${props => props.theme.colors.error};
-    color: ${props => props.theme.colors.error};
-  }
-`;
 
 const Header: React.FC = () => {
   const location = useLocation();
-  const { user, isLoggedIn, logout } = useUser();
+  const { user, isLoggedIn } = useUser();
 
   return (
     <HeaderContainer>
@@ -105,17 +91,15 @@ const Header: React.FC = () => {
           </NavLink>
         </NavLinks>
         
-        {isLoggedIn && user && (
-          <UserSection>
+        <UserSection>
+          {isLoggedIn && user && (
             <UserInfo>
               <UserName>{user.name}</UserName>
               <UserLevel>Level {user.level} • {user.experience} XP</UserLevel>
             </UserInfo>
-            <LogoutButton onClick={logout}>
-              Logout
-            </LogoutButton>
-          </UserSection>
-        )}
+          )}
+          <GoogleAuthButton />
+        </UserSection>
       </Nav>
     </HeaderContainer>
   );

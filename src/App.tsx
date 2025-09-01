@@ -4,7 +4,7 @@ import { ThemeProvider } from 'styled-components';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import GlobalStyles from './styles/GlobalStyles';
 import { theme } from './styles/theme';
-import { UserProvider } from './contexts/UserContext';
+import { CloudUserProvider } from './contexts/CloudUserContext';
 import Header from './components/Layout/Header';
 import Home from './pages/Home';
 import Game from './pages/Game';
@@ -18,7 +18,7 @@ function App() {
     <ThemeProvider theme={theme}>
       <GlobalStyles />
       <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-        <UserProvider>
+        <CloudUserProvider>
           <Router>
             <div className="App">
               <Header />
@@ -31,7 +31,7 @@ function App() {
               </main>
             </div>
           </Router>
-        </UserProvider>
+        </CloudUserProvider>
       </GoogleOAuthProvider>
     </ThemeProvider>
   );

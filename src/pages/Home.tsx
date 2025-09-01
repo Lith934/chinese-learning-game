@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
+import { useCloudUser as useUser } from '../contexts/CloudUserContext';
 
 const Container = styled.div`
   max-width: 1200px;
@@ -78,7 +79,25 @@ const FeatureDescription = styled.p`
   color: ${props => props.theme.colors.text.secondary};
 `;
 
+const AuthPrompt = styled.div`
+  background: linear-gradient(135deg, ${props => props.theme.colors.primary}20, ${props => props.theme.colors.secondary}20);
+  padding: ${props => props.theme.spacing.lg};
+  border-radius: 12px;
+  margin-bottom: ${props => props.theme.spacing.lg};
+  border: 2px solid ${props => props.theme.colors.primary}30;
+`;
+
+const WelcomeBack = styled.div`
+  background: linear-gradient(135deg, ${props => props.theme.colors.success}20, ${props => props.theme.colors.primary}20);
+  padding: ${props => props.theme.spacing.lg};
+  border-radius: 12px;
+  margin-bottom: ${props => props.theme.spacing.lg};
+  border: 2px solid ${props => props.theme.colors.success}30;
+`;
+
 const Home: React.FC = () => {
+  const { user, isLoggedIn } = useUser();
+
   return (
     <Container>
       <Hero>
@@ -86,7 +105,28 @@ const Home: React.FC = () => {
         <Subtitle>
           Master Chinese characters through interactive games and earn rewards!
         </Subtitle>
-        <PlayButton to="/game">Start Learning 开始学习</PlayButton>
+        
+        {!isLoggedIn ? (
+          <AuthPrompt>
+            <p style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#666' }}>
+              👋 Ready to start your Chinese learning journey?
+            </p>
+            <p style={{ margin: '0 0 1rem 0', fontSize: '0.9rem', color: '#888' }}>
+              Sign in with Google to track your progress, unlock achievements, and save your learning data!
+            </p>
+            <PlayButton to="/game">Get Started 开始学习</PlayButton>
+          </AuthPrompt>
+        ) : user ? (
+          <WelcomeBack>
+            <p style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: '#666' }}>
+              🎉 Welcome back, {user.name}!
+            </p>
+            <p style={{ margin: '0 0 1rem 0', fontSize: '0.9rem', color: '#888' }}>
+              Level {user.level} • {user.experience} XP • Ready for your next session?
+            </p>
+            <PlayButton to="/game">Continue Learning 继续学习</PlayButton>
+          </WelcomeBack>
+        ) : null}
       </Hero>
 
       <Features>

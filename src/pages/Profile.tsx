@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { useUser } from '../contexts/UserContext';
+import { useCloudUser as useUser } from '../contexts/CloudUserContext';
 
 const Container = styled.div`
   max-width: 800px;
