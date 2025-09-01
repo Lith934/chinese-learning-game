@@ -7,8 +7,8 @@ import { getAuth } from 'firebase/auth';
 const allowedDomains = [
   'localhost',
   '127.0.0.1',
-  // GitHub Pages domain - update with your actual GitHub username
-  'simondai.github.io',
+  // GitHub Pages domain - actual GitHub username
+  'simontheteemo.github.io',
   // Add custom domain if you set one up later
   // 'your-custom-domain.com'
 ];
